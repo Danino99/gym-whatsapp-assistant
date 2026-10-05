@@ -1,0 +1,21 @@
+.env
+.env.*
+!.env.example
+
+# Container state and local test data
+n8n_data/
+postgres_data/
+redis_data/
+evolution_instances/
+evolution_store/
+local_files/
+*.log
+*.sqlite
+*.sqlite3
+
+# Local exports and credentials
+*live-export*.json
+*credentials*.json
+auth.json
+*.pem
+*.key

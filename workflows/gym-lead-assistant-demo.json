@@ -1,0 +1,919 @@
+{
+  "name": "Gym Lead Assistant — Demo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gym-demo-lead-intake",
+        "options": {}
+      },
+      "id": "b54461c5-a867-4aa8-a1f0-150ac370e505",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "30648c79-9cb8-4530-98d9-7454fd4ec1c7",
+              "name": "gym_nombre",
+              "value": "Gym Demo",
+              "type": "string"
+            },
+            {
+              "id": "d8b4b543-0cd1-4462-868e-c6332706c81a",
+              "name": "tono",
+              "value": "cercano, claro y breve; tuteo panhispanico",
+              "type": "string"
+            },
+            {
+              "id": "7a909dba-2bc2-490e-a1e0-c320f393d21a",
+              "name": "info_publica",
+              "value": "direccion, horarios de clases y que la primera clase es de prueba",
+              "type": "string"
+            },
+            {
+              "id": "9bc81adf-2339-452f-aa7b-76955299dbc0",
+              "name": "objetivo",
+              "value": "responder, invitar a la clase de prueba y pedir el nombre si no lo tenemos",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cc2341ce-cd09-4d49-885a-48b5c9af52b5",
+      "name": "Info del gimnasio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst data = body.data ?? body;\nconst messageValue = data.message?.conversation ?? data.message?.extendedTextMessage?.text ?? data.text ?? (typeof data.message === 'string' ? data.message : '');\nconst mensaje = String(messageValue ?? '').trim();\nconst senderValue = data.key?.remoteJid ?? data.from ?? data.phone ?? '';\nconst telefono = String(senderValue).replace(/@s\\.whatsapp\\.net$/, '');\nconst esComando = mensaje.startsWith('//') || mensaje.startsWith('/');\nlet comando = 'desconocido';\nif (mensaje.startsWith('//clases')) comando = 'clases';\nelse if (mensaje.startsWith('/interesados')) comando = 'interesados';\nconst ruta = esComando ? 'comando' : 'mensaje';\nreturn [{ json: { ruta, comando, telefono, mensaje } }];"
+      },
+      "id": "7c0e31d0-312f-43bd-8d2b-70176ba6c471",
+      "name": "Parse Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.ruta }}",
+                    "rightValue": "comando",
+                    "operator": {
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.ruta }}",
+                    "rightValue": "mensaje",
+                    "operator": {
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2180d5a1-210c-48e2-acb7-bccff77a2141",
+      "name": "Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Gym Demo Leads",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "telefono",
+              "lookupValue": "={{ $json.telefono }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": true
+        }
+      },
+      "id": "e5c44908-66df-4199-8056-b73655016a83",
+      "name": "Buscar contacto",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "23bfd6b0-ad62-4b47-a0a3-601c90c364b3",
+              "leftValue": "={{ $json.nombre }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "94d29535-e8fd-47a7-9227-4a3424a6e657",
+      "name": "¿Existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc621f41-cca8-4559-b1d4-63cc26e2dde7",
+              "leftValue": "={{ $json.estado }}",
+              "rightValue": "alumno",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fbc82ff1-7c29-411e-aa84-f59834757330",
+      "name": "¿Es alumno?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        340
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "6fbadc0f-c783-483f-a1d2-44cdf333ac06",
+      "name": "Derivar a humano",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Gym Demo Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono": "={{ $('Parse Message').item.json.telefono }}",
+            "nombre": "",
+            "genero": "",
+            "estado": "interesado",
+            "contexto": "",
+            "mensajes_sin_respuesta": "1",
+            "fecha_ultimo_mensaje": "={{ new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false }) }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "b0ee7816-eb32-4a3f-aad5-5939bb8b1fef",
+      "name": "Alta interesado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1360,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Sos el asistente de WhatsApp de ' + $('Info del gimnasio').item.json.gym_nombre + + '. Tono: ' + $('Info del gimnasio').item.json.tono + + '. Informacion que podes dar: ' + $('Info del gimnasio').item.json.info_publica + + '. Objetivo: ' + $('Info del gimnasio').item.json.objetivo + + '. Nunca inventes precios, horarios ni disponibilidad. Si hace falta una decision humana, deci que un miembro del equipo va a responder. Devuelve JSON valido con exactamente estas claves: respuesta, nombre, contexto. El campo nombre queda vacio si no lo menciono. '+ 'Mensaje entrante: ' + $('Parse Message').item.json.mensaje }}"
+      },
+      "id": "dd43f301-3d3e-471d-951b-ffd22884b4a7",
+      "name": "Bienvenida",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1620,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "id": "e7b4b413-6d5a-4f3a-8baf-c2918100f570",
+      "name": "Gemini Bienvenida",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = items[0].json.text;\nconst clean = text.replace(/```json|```/g, '').trim();\nreturn [{ json: JSON.parse(clean) }];"
+      },
+      "id": "adba7ad3-038b-41b7-bb98-ecc1e68270f5",
+      "name": "Parse bienvenida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "REPLACE_WITH_EVOLUTION_API_URL/message/sendText/REPLACE_WITH_INSTANCE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Parse Message').item.json.telefono }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.respuesta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "483cb6ca-3759-49e4-a1ab-27f8b3eee459",
+      "name": "Enviar bienvenida",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Sos el asistente de WhatsApp de ' + $('Info del gimnasio').item.json.gym_nombre + + '. Tono: ' + $('Info del gimnasio').item.json.tono + + '. Informacion que podes dar: ' + $('Info del gimnasio').item.json.info_publica + + '. Objetivo: ' + $('Info del gimnasio').item.json.objetivo + + '. Nunca inventes precios, horarios ni disponibilidad. Si hace falta una decision humana, deci que un miembro del equipo va a responder. Devuelve JSON valido con exactamente estas claves: respuesta, nombre, contexto. El campo nombre queda vacio si no lo menciono. '+ 'Contexto previo: ' + ($('¿Es alumno?').item.json.contexto || '') + '. Mensaje entrante: ' + $('Parse Message').item.json.mensaje }}"
+      },
+      "id": "a5632e81-8bde-4abc-ae53-ed1cd0d33a3a",
+      "name": "Respuesta interesado",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1620,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "id": "d9829d6f-ff81-4a2c-8b62-ad0945363973",
+      "name": "Gemini respuesta",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = items[0].json.text;\nconst clean = text.replace(/```json|```/g, '').trim();\nreturn [{ json: JSON.parse(clean) }];"
+      },
+      "id": "4daad76f-e5da-4074-a639-4dacb67d90ba",
+      "name": "Parse respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Gym Demo Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono": "={{ $('Parse Message').item.json.telefono }}",
+            "nombre": "={{ $json.nombre }}",
+            "contexto": "={{ $json.contexto }}",
+            "fecha_ultimo_mensaje": "={{ new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false }) }}"
+          }
+        },
+        "options": {
+          "keyRow": "telefono"
+        }
+      },
+      "id": "b196e37a-6c76-4baf-bf5a-1fa23cb4ae7b",
+      "name": "Actualizar contacto",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2100,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "REPLACE_WITH_EVOLUTION_API_URL/message/sendText/REPLACE_WITH_INSTANCE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $('Parse Message').item.json.telefono }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('Parse respuesta').item.json.respuesta }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e268f7d3-2a90-421a-b565-3151138a09ec",
+      "name": "Enviar respuesta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2340,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.comando }}",
+                    "rightValue": "clases",
+                    "operator": {
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.comando }}",
+                    "rightValue": "interesados",
+                    "operator": {
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6e847cd3-6a1e-408e-9303-e1d98545dab1",
+      "name": "Router comando",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        900,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Gym Demo Leads",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "8600b894-e49e-4fb6-9915-a0038a1b823e",
+      "name": "Leer clases",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst startOfWeek = new Date(now);\nstartOfWeek.setDate(now.getDate() - now.getDay());\nconst rows = items.map(i => i.json);\nconst trial = rows.filter(r => r.clase_prueba);\nconst thisWeek = trial.filter(r => new Date(r.clase_prueba) >= startOfWeek);\nconst pending = thisWeek.filter(r => String(r.recordatorio_enviado).toLowerCase() !== 'si');\nreturn pending.map(r => ({ json: { telefono: r.telefono, nombre: r.nombre || '', clase_prueba: r.clase_prueba } }));"
+      },
+      "id": "5bb142f7-463d-4bff-9c36-baeeb3890f83",
+      "name": "Clases y recordatorios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "REPLACE_WITH_EVOLUTION_API_URL/message/sendText/REPLACE_WITH_INSTANCE",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{ $json.telefono }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ 'Hola ' + ($json.nombre || '') + ', te recuerdo que tenes tu clase de prueba el ' + $json.clase_prueba + '.' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5ef6205d-c34e-4b4d-b4b2-93490e246ad4",
+      "name": "Enviar recordatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Gym Demo Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono": "={{ $json.telefono }}",
+            "recordatorio_enviado": "si"
+          }
+        },
+        "options": {
+          "keyRow": "telefono"
+        }
+      },
+      "id": "3d479a42-3455-446b-b520-be13f6ecd9e1",
+      "name": "Marcar recordatorio",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1840,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Gym Demo Leads",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "aaa4318c-8931-4c76-96df-7d80f3dd892c",
+      "name": "Leer interesados",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = items.map(i => i.json);\nconst interested = rows.filter(r => String(r.estado).toLowerCase() === 'interesado');\nconst stuck = interested.filter(r => Number(r.mensajes_sin_respuesta || 0) > 0 || !r.nombre);\nconst list = stuck.map(r => `- ${r.nombre || '(sin nombre)'} | ${r.telefono} | ${r.contexto || ''}`).join('\\n');\nreturn [{ json: { total: stuck.length, lista: list || '(sin conversaciones para retomar)' } }];"
+      },
+      "id": "fba6f048-4c59-4602-8fd7-5a4e8be9e4cb",
+      "name": "Lista para retomar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "15e284d1-3b84-4e26-afac-4851fc6894ab",
+      "name": "Responder a staff",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        -140
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b9959e66-a35c-4654-8a2d-c19e5c96c3f6",
+      "name": "Comando desconocido",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -40
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Info del gimnasio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Info del gimnasio": {
+      "main": [
+        [
+          {
+            "node": "Parse Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Message": {
+      "main": [
+        [
+          {
+            "node": "Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router": {
+      "main": [
+        [
+          {
+            "node": "Router comando",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Buscar contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar contacto": {
+      "main": [
+        [
+          {
+            "node": "¿Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Existe?": {
+      "main": [
+        [
+          {
+            "node": "¿Es alumno?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alta interesado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es alumno?": {
+      "main": [
+        [
+          {
+            "node": "Derivar a humano",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta interesado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alta interesado": {
+      "main": [
+        [
+          {
+            "node": "Bienvenida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bienvenida": {
+      "main": [
+        [
+          {
+            "node": "Parse bienvenida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse bienvenida": {
+      "main": [
+        [
+          {
+            "node": "Enviar bienvenida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respuesta interesado": {
+      "main": [
+        [
+          {
+            "node": "Parse respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse respuesta": {
+      "main": [
+        [
+          {
+            "node": "Actualizar contacto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar contacto": {
+      "main": [
+        [
+          {
+            "node": "Enviar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Bienvenida": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Bienvenida",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini respuesta": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Respuesta interesado",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router comando": {
+      "main": [
+        [
+          {
+            "node": "Leer clases",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leer interesados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Comando desconocido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer clases": {
+      "main": [
+        [
+          {
+            "node": "Clases y recordatorios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clases y recordatorios": {
+      "main": [
+        [
+          {
+            "node": "Enviar recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar recordatorio": {
+      "main": [
+        [
+          {
+            "node": "Marcar recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer interesados": {
+      "main": [
+        [
+          {
+            "node": "Lista para retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista para retomar": {
+      "main": [
+        [
+          {
+            "node": "Responder a staff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
